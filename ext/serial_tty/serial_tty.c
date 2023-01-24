@@ -28,25 +28,31 @@ void Init_serial_tty()
 
 static VALUE serial_tty_name(VALUE self, VALUE rb_vid, VALUE rb_pid)
 {
+  uint32_t req_vid = NUM2UINT(rb_vid);
+  uint32_t req_pid = NUM2UINT(rb_pid);
+  VALUE ret = Qnil;
+
+#if defined(__APPLE__)
   io_iterator_t iterator = MACH_PORT_NULL;
   io_object_t port;
   
-  uint32_t req_vid = NUM2UINT(rb_vid);
-  uint32_t req_pid = NUM2UINT(rb_pid);
   
   CFMutableDictionaryRef keywordDict = IOServiceMatching(kIOSerialBSDServiceValue);
 
   // Note: kIOMasterPortDefault is deprecated starting macOS 12 to reduce confusion surrounding
   // the possibility that the main port could have subordinates (which it very much does).
-  // unfortunately, earlier macOS versions don't export the newer, trendier constant, so we're 
+  // Unfortunately, earlier macOS versions don't export the newer, trendier constant, so we're 
   // stuck silencing a deprecation warning. Ce la vie.
   //
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   kern_return_t result = IOServiceGetMatchingServices(kIOMasterPortDefault, keywordDict, &iterator);
+  #pragma clang diagnostic pop
+
   if (KERN_SUCCESS != result)
     return Qnil;
 
   bool found = false;
-  VALUE ret = Qnil;
   
   while ((port = IOIteratorNext(iterator)) && !found)
   {
@@ -85,6 +91,9 @@ static VALUE serial_tty_name(VALUE self, VALUE rb_vid, VALUE rb_pid)
       device = parent;
     }
   }
+#elif defined(__linux__)
+#error Linux is not yet supported
+#endif
   
   return ret;
 }
