@@ -72,24 +72,32 @@ static VALUE serial_tty_name(VALUE self, VALUE rb_vid, VALUE rb_pid)
           {
             CFTypeRef name;
             char buf[256];
+            char *ptr = buf;
+            memcpy(buf, "/dev/", 5);
+            ptr += 5;
+            
             if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOTTYDeviceKey), kCFAllocatorDefault, 0)))
             {
-              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+              memcpy(ptr, "tty.", 4); ptr += 4;
+              CFStringGetCString(name, ptr, 128, kCFStringEncodingASCII);
             }
             else
             if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOCalloutDeviceKey), kCFAllocatorDefault, 0)))
             {
-              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+              memcpy(ptr, "cu.", 3); ptr += 3;
+              CFStringGetCString(name, ptr, 128, kCFStringEncodingASCII);
             }
             else
             if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIODialinDeviceKey), kCFAllocatorDefault, 0)))
             {
-              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+              // Unsure what case this would be used in.
+              CFStringGetCString(name, ptr, 128, kCFStringEncodingASCII);
             }
             else
             if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOTTYBaseNameKey), NULL, 0)))
             {
-              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+              memcpy(ptr, "tty.", 4); ptr += 4;
+              CFStringGetCString(name, ptr, 128, kCFStringEncodingASCII);
             }
             else
             {

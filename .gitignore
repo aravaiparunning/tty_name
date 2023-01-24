@@ -2,3 +2,5 @@
 Gemfile.lock
 tmp
 lib/display_info/display_info.bundle
+lib/serial_tty/serial_tty.bundle
+serial_tty-0.0.1.gem
