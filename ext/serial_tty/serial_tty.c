@@ -65,19 +65,40 @@ static VALUE serial_tty_name(VALUE self, VALUE rb_vid, VALUE rb_pid)
       
         if (NULL != vendor_id || NULL != pr_id)
         {
-          uint32_t vid, pid;
-          CFNumberGetValue(vendor_id, kCFNumberSInt32Type, &vid);
-          CFNumberGetValue(pr_id, kCFNumberSInt32Type, &pid);
+          uint16_t vid, pid;
+          CFNumberGetValue(vendor_id, kCFNumberSInt16Type, &vid);
+          CFNumberGetValue(pr_id, kCFNumberSInt16Type, &pid);
           if((vid==req_vid) && (pid==req_pid))
           {
-              // MY SERIAL DEVICE DETECTED !! 
-            CFTypeRef deviceName = IORegistryEntryCreateCFProperty(device, CFSTR(kIOTTYDeviceKey), NULL, 0);
-
+            CFTypeRef name;
             char buf[256];
-            CFStringGetCString(deviceName, buf, 256, kCFStringEncodingUTF8);
-
-            // CFTypeRef callOutDevice = IORegistryEntryCreateCFProperty(device, CFSTR(kIOCalloutDeviceKey), NULL, 0);
-            // CFTypeRef dialInDevice = IORegistryEntryCreateCFProperty(device, CFSTR(kIODialinDeviceKey), NULL, 0);
+            if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOTTYDeviceKey), kCFAllocatorDefault, 0)))
+            {
+              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+            }
+            else
+            if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOCalloutDeviceKey), kCFAllocatorDefault, 0)))
+            {
+              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+            }
+            else
+            if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIODialinDeviceKey), kCFAllocatorDefault, 0)))
+            {
+              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+            }
+            else
+            if ((name = IORegistryEntryCreateCFProperty(device, CFSTR(kIOTTYBaseNameKey), NULL, 0)))
+            {
+              CFStringGetCString(name, buf, 128, kCFStringEncodingASCII);
+            }
+            else
+            {
+              // We'll get here if our calls to IORegistryEntryCreateCFProperty are incorrect.
+              // Older macOSs are more sensitive to the type of allocator passed in; where 
+              // usually default behavior is assumed when the allocator is NULL, that doesn't
+              // seem to be the case on at least 10.14
+              return Qnil;
+            }
 
             ret = rb_str_new2(buf);
             found = true;
@@ -95,6 +116,7 @@ static VALUE serial_tty_name(VALUE self, VALUE rb_vid, VALUE rb_pid)
 #error Linux is not yet supported
 #endif
   
+
   return ret;
 }
 
